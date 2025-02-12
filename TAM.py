@@ -97,17 +97,23 @@ program_html = """
     </div>
 
     <script>
-        var socket = io.connect('http://' + document.domain + ':' + location.port);
+    var socket = io.connect('http://' + document.domain + ':' + location.port);
 
-        function sendLetters() {
-            let input = document.getElementById("userInput").value.toUpperCase();
-            socket.emit('sort_letters', input);
-        }
+    function sendLetters() {
+        let input = document.getElementById("userInput").value.toUpperCase();
+        socket.emit('sort_letters', input);
+    }
 
-        socket.on('sorted_response', function(data) {
-            document.getElementById("output").textContent = data.sorted_letters;
-        });
-    </script>
+    socket.on('sorted_response', function(data) {
+        document.getElementById("output").textContent = data.sorted_letters;
+    });
+
+    // Select all text in the input box when clicked
+    document.getElementById("userInput").addEventListener("click", function() {
+        this.select();
+    });
+</script>
+
 </body>
 </html>
 """

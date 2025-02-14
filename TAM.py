@@ -1,4 +1,4 @@
-from flask import Flask, render_template
+from flask import Flask
 from flask_socketio import SocketIO, emit
 import webbrowser
 import threading
@@ -6,7 +6,16 @@ import threading
 app = Flask(__name__)
 socketio = SocketIO(app)  # Enable WebSockets
 
-# HTML for the menu
+# Store history of inputs and results
+history = []
+
+# Function to sort only the letters T, A, and M
+def sort_letters(input_str):
+    allowed_letters = {'T', 'A', 'M'}
+    sorted_letters = ''.join(sorted([char for char in input_str if char in allowed_letters]))
+    return sorted_letters
+
+# HTML for the main menu
 menu_html = """
 <!DOCTYPE html>
 <html lang="en">
@@ -84,6 +93,8 @@ program_html = """
     <div class="half server">
         <h2>Server Status</h2>
         <p>The server is running and ready to process WebSocket requests.</p>
+        <h3>Recent Inputs:</h3>
+        <ul id="historyList"></ul>
         <button onclick="window.location.href='/'">Back to Menu</button>
     </div>
     <div class="half client">
@@ -97,23 +108,41 @@ program_html = """
     </div>
 
     <script>
-    var socket = io.connect('http://' + document.domain + ':' + location.port);
+        var socket = io.connect('http://' + document.domain + ':' + location.port);
 
-    function sendLetters() {
-        let input = document.getElementById("userInput").value.toUpperCase();
-        socket.emit('sort_letters', input);
-    }
+        function sendLetters() {
+            let input = document.getElementById("userInput").value.toUpperCase();
+            socket.emit('sort_letters', input);
+        }
 
-    socket.on('sorted_response', function(data) {
-        document.getElementById("output").textContent = data.sorted_letters;
-    });
+        socket.on('sorted_response', function(data) {
+            document.getElementById("output").textContent = data.sorted_letters;
+            updateHistory(data.input, data.sorted_letters);
+        });
 
-    // Select all text in the input box when clicked
-    document.getElementById("userInput").addEventListener("click", function() {
-        this.select();
-    });
-</script>
+        socket.emit("get_history");
 
+        socket.on("history_response", function(data) {
+            let historyList = document.getElementById("historyList");
+            historyList.innerHTML = "";
+            data.history.forEach(entry => {
+                let listItem = document.createElement("li");
+                listItem.textContent = `Input: ${entry.input} → Sorted: ${entry.sorted}`;
+                historyList.appendChild(listItem);
+            });
+        });
+
+        function updateHistory(input, sorted) {
+            let historyList = document.getElementById("historyList");
+            let listItem = document.createElement("li");
+            listItem.textContent = `Input: ${input} → Sorted: ${sorted}`;
+            historyList.appendChild(listItem);
+        }
+
+        document.getElementById("userInput").addEventListener("click", function() {
+            this.select();
+        });
+    </script>
 </body>
 </html>
 """
@@ -131,12 +160,14 @@ def program():
     return program_html
 
 @socketio.on("sort_letters")
-def handle_sort(data):
-    if not all(char in "TAM" for char in data):
-        emit("sorted_response", {"sorted_letters": "Invalid input!"})
-    else:
-        sorted_string = "".join(sorted(data, key="TAM".index))
-        emit("sorted_response", {"sorted_letters": sorted_string})
+def handle_sort(input_str):
+    sorted_result = sort_letters(input_str)
+    history.append({"input": input_str, "sorted": sorted_result})
+    emit("sorted_response", {"input": input_str, "sorted_letters": sorted_result}, broadcast=True)
+
+@socketio.on("get_history")
+def send_history():
+    emit("history_response", {"history": history})
 
 def open_browser():
     webbrowser.open("http://127.0.0.1:5000/")

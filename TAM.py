@@ -1,46 +1,38 @@
-# Import necessary modules for web application and real-time communication
 from flask import Flask
 from flask_socketio import SocketIO, emit
-import webbrowser # Module to open URLs in a web browser     
-import threading  # Module to handle threading for asynchronous tasks
+import webbrowser
+import threading
 
-app = Flask(__name__) # Initialize the Flask application
-socketio = SocketIO(app)  # Enable WebSockets
+# Initialize Flask app
+app = Flask(__name__)
+socketio = SocketIO(app)  # Enable WebSockets for real-time updates
 
-# Store history of inputs and results
+# Store the history of inputs and their sorted results
 history = []
 
-# Function to sort only the letters T, A, and M
+# Function to sort letters in the order: T -> A -> M
 def sort_letters(input_str):
-    allowed_letters = {'T', 'A', 'M'}
-    sorted_letters = ''.join(sorted([char for char in input_str if char in allowed_letters]))
-    return sorted_letters
+    """
+    Sorts the input string to ensure the order is always:
+    T first, followed by A, then M.
 
-# HTML for the main menu
-menu_html = """
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Letter Sorting App - Menu</title>
-    <style>
-        body { font-family: Arial, sans-serif; text-align: center; background-color: #f4f4f4; }
-        .container { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 0 10px rgba(0, 0, 0, 0.1); width: 400px; margin: auto; margin-top: 10%; }
-        button { margin: 10px; padding: 15px; width: 100%; font-size: 18px; background-color: #008CBA; color: white; border: none; border-radius: 5px; cursor: pointer; }
-        button:hover { background-color: #005f73; }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <h2>Letter Sorting App</h2>
-        <p>Select an option:</p>
-        <button onclick="window.location.href='/overview'">Overview</button>
-        <button onclick="window.location.href='/program'">Go to Program</button>
-    </div>
-</body>
-</html>
-"""
+    Args:
+        input_str (str): The input string containing any letters.
+
+    Returns:
+        str: A new string with only T, A, and M sorted in the correct order.
+    """
+    # Dictionary to count occurrences of each allowed letter
+    counts = {'T': 0, 'A': 0, 'M': 0}
+
+    # Count occurrences of each letter in the input string
+    for char in input_str:
+        if char in counts:
+            counts[char] += 1
+
+    # Construct the sorted result in the fixed order: T -> A -> M
+    sorted_result = 'T' * counts['T'] + 'A' * counts['A'] + 'M' * counts['M']
+    return sorted_result
 
 # HTML for the Overview page
 overview_html = """
@@ -70,7 +62,33 @@ overview_html = """
 </html>
 """
 
-# HTML for the program (Client-Server UI)
+# HTML for the main menu
+menu_html = """
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Letter Sorting App - Menu</title>
+    <style>
+        body { font-family: Arial, sans-serif; text-align: center; background-color: #f4f4f4; }
+        .container { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 0 10px rgba(0, 0, 0, 0.1); width: 400px; margin: auto; margin-top: 10%; }
+        button { margin: 10px; padding: 15px; width: 100%; font-size: 18px; background-color: #008CBA; color: white; border: none; border-radius: 5px; cursor: pointer; }
+        button:hover { background-color: #005f73; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Letter Sorting App</h2>
+        <p>Select an option:</p>
+        <button onclick="window.location.href='/overview'">Overview</button>
+        <button onclick="window.location.href='/program'">Go to Program</button>
+    </div>
+</body>
+</html>
+"""
+
+# HTML for the sorting program
 program_html = """
 <!DOCTYPE html>
 <html lang="en">
@@ -109,6 +127,7 @@ program_html = """
     </div>
 
     <script>
+        // Establish WebSocket connection with the Flask server
         var socket = io.connect('http://' + document.domain + ':' + location.port);
 
         function sendLetters() {
@@ -116,13 +135,16 @@ program_html = """
             socket.emit('sort_letters', input);
         }
 
+        // Receive sorted response from the server and update the UI
         socket.on('sorted_response', function(data) {
             document.getElementById("output").textContent = data.sorted_letters;
             updateHistory(data.input, data.sorted_letters);
         });
 
+        // Request history from the server
         socket.emit("get_history");
 
+        // Update history when received from the server
         socket.on("history_response", function(data) {
             let historyList = document.getElementById("historyList");
             historyList.innerHTML = "";
@@ -139,22 +161,15 @@ program_html = """
             listItem.textContent = `Input: ${input} → Sorted: ${sorted}`;
             historyList.appendChild(listItem);
         }
-
-        document.getElementById("userInput").addEventListener("click", function() {
-            this.select();
-        });
     </script>
 </body>
 </html>
 """
 
-##This code defines a route for the root URL ("/") of a Flask web application. 
-#When a user visits this URL, the home function is called, which returns the HTML content stored 
-#in the menu_html variable, rendering it in the user's browser.
-@app.route("/") 
+# Route for the main menu
+@app.route("/")
 def home():
     return menu_html
-
 
 #This code snippet is using Flask, a Python web framework. It defines a route for the URL "/overview" 
 #in a Flask application. When a user visits this URL, the overview() function is called. 
@@ -165,35 +180,37 @@ def home():
 def overview():
     return overview_html
 
-#This code defines a route for the URL "/program" in a Flask web application. When a user visits this URL, 
-#the program function is called, which returns the HTML content stored in the program_html variable, 
-#rendering it in the user's browser.
+# Route for the sorting program
 @app.route("/program")
 def program():
     return program_html
 
-#This code defines a WebSocket event handler for a "sort_letters" event. When this event is received, it:
-#Sorts the input string using the sort_letters function.
-#Appends the input and sorted result to a history list.
-#Emits a "sorted_response" event to all connected clients, broadcasting the input and sorted result.
-#socketio.on is a decorator from the Flask-SocketIO library, which registers the handle_sort function to handle incoming "sort_letters" events.
+# WebSocket event to handle sorting
 @socketio.on("sort_letters")
 def handle_sort(input_str):
+    """
+    Handles sorting requests from the client.
+    - Sorts the input string in T → A → M order.
+    - Stores the result in history.
+    - Sends the result back to all connected clients.
+    """
     sorted_result = sort_letters(input_str)
     history.append({"input": input_str, "sorted": sorted_result})
     emit("sorted_response", {"input": input_str, "sorted_letters": sorted_result}, broadcast=True)
 
-#This code snippet is a WebSocket event handler that responds to a "get_history" event by emitting a 
-#"history_response" event with the current history data.
+# WebSocket event to send history to clients
 @socketio.on("get_history")
 def send_history():
+    """
+    Sends the full history of inputs and sorted results to the client.
+    """
     emit("history_response", {"history": history})
 
-#This code snippet defines a function called open_browser that uses the webbrowser 
-#module to open a web browser and navigate to the URL "http://127.0.0.1:5000/".
+# Function to automatically open the browser when the server starts
 def open_browser():
     webbrowser.open("http://127.0.0.1:5000/")
 
+# Run the Flask-SocketIO app
 if __name__ == "__main__":
     threading.Timer(1, open_browser).start()
     socketio.run(app, debug=True)

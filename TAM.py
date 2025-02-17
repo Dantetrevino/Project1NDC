@@ -1,9 +1,10 @@
+# Import necessary modules for web application and real-time communication
 from flask import Flask
 from flask_socketio import SocketIO, emit
-import webbrowser
-import threading
+import webbrowser # Module to open URLs in a web browser     
+import threading  # Module to handle threading for asynchronous tasks
 
-app = Flask(__name__)
+app = Flask(__name__) # Initialize the Flask application
 socketio = SocketIO(app)  # Enable WebSockets
 
 # Store history of inputs and results
@@ -147,28 +148,49 @@ program_html = """
 </html>
 """
 
-@app.route("/")
+##This code defines a route for the root URL ("/") of a Flask web application. 
+#When a user visits this URL, the home function is called, which returns the HTML content stored 
+#in the menu_html variable, rendering it in the user's browser.
+@app.route("/") 
 def home():
     return menu_html
 
+
+#This code snippet is using Flask, a Python web framework. It defines a route for the URL "/overview" 
+#in a Flask application. When a user visits this URL, the overview() function is called. 
+#This function returns the value of the overview_html variable, which contains HTML content. 
+#This code is likely part of a web application that displays an overview page when the user navigates 
+#to "/overview".
 @app.route("/overview")
 def overview():
     return overview_html
 
+#This code defines a route for the URL "/program" in a Flask web application. When a user visits this URL, 
+#the program function is called, which returns the HTML content stored in the program_html variable, 
+#rendering it in the user's browser.
 @app.route("/program")
 def program():
     return program_html
 
+#This code defines a WebSocket event handler for a "sort_letters" event. When this event is received, it:
+#Sorts the input string using the sort_letters function.
+#Appends the input and sorted result to a history list.
+#Emits a "sorted_response" event to all connected clients, broadcasting the input and sorted result.
+#socketio.on is a decorator from the Flask-SocketIO library, which registers the handle_sort function to handle incoming "sort_letters" events.
 @socketio.on("sort_letters")
 def handle_sort(input_str):
     sorted_result = sort_letters(input_str)
     history.append({"input": input_str, "sorted": sorted_result})
     emit("sorted_response", {"input": input_str, "sorted_letters": sorted_result}, broadcast=True)
 
+#This code snippet is a WebSocket event handler that responds to a "get_history" event by emitting a 
+#"history_response" event with the current history data.
 @socketio.on("get_history")
 def send_history():
     emit("history_response", {"history": history})
 
+#This code snippet defines a function called open_browser that uses the webbrowser 
+#module to open a web browser and navigate to the URL "http://127.0.0.1:5000/".
 def open_browser():
     webbrowser.open("http://127.0.0.1:5000/")
 

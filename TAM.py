@@ -14,7 +14,7 @@ history = []
 def sort_letters(input_str):
     """
     Sorts the input string to ensure the order is always:
-    T first, followed by A, then M.
+    T first (negative order), followed by A, then M (positive order).
 
     Args:
         input_str (str): The input string containing any letters.
@@ -31,6 +31,7 @@ def sort_letters(input_str):
             counts[char] += 1
 
     # Construct the sorted result in the fixed order: T -> A -> M
+    # Here T (negative) comes first, followed by A (neutral), and M (positive) comes last
     sorted_result = 'T' * counts['T'] + 'A' * counts['A'] + 'M' * counts['M']
     return sorted_result
 
@@ -126,7 +127,7 @@ program_html = """
         </div>
     </div>
 
-    <script>
+        <script>
         // Establish WebSocket connection with the Flask server
         var socket = io.connect('http://' + document.domain + ':' + location.port);
 
@@ -161,7 +162,20 @@ program_html = """
             listItem.textContent = `Input: ${input} → Sorted: ${sorted}`;
             historyList.appendChild(listItem);
         }
+
+        // Add functionality for "Enter" key to trigger sorting
+        document.getElementById("userInput").addEventListener("keydown", function(event) {
+            if (event.key === "Enter") {
+                sendLetters();
+            }
+        });
+
+        // Select all text in the input field when clicked
+        document.getElementById("userInput").addEventListener("click", function() {
+            this.select();
+        });
     </script>
+
 </body>
 </html>
 """
@@ -171,11 +185,7 @@ program_html = """
 def home():
     return menu_html
 
-#This code snippet is using Flask, a Python web framework. It defines a route for the URL "/overview" 
-#in a Flask application. When a user visits this URL, the overview() function is called. 
-#This function returns the value of the overview_html variable, which contains HTML content. 
-#This code is likely part of a web application that displays an overview page when the user navigates 
-#to "/overview".
+# Route for the Overview page
 @app.route("/overview")
 def overview():
     return overview_html

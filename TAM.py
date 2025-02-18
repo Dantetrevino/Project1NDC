@@ -14,7 +14,7 @@ history = []
 def sort_letters(input_str):
     """
     Sorts the input string to ensure the order is always:
-    T first (negative order), followed by A, then M (positive order).
+    T first, followed by A, then M.
 
     Args:
         input_str (str): The input string containing any letters.
@@ -22,17 +22,22 @@ def sort_letters(input_str):
     Returns:
         str: A new string with only T, A, and M sorted in the correct order.
     """
-    # Dictionary to count occurrences of each allowed letter
-    counts = {'T': 0, 'A': 0, 'M': 0}
+    # Initialize counts for T, A, and M
+    count_T = 0
+    count_A = 0
+    count_M = 0
 
     # Count occurrences of each letter in the input string
     for char in input_str:
-        if char in counts:
-            counts[char] += 1
+        if char == 'T':
+            count_T += 1
+        elif char == 'A':
+            count_A += 1
+        elif char == 'M':
+            count_M += 1
 
     # Construct the sorted result in the fixed order: T -> A -> M
-    # Here T (negative) comes first, followed by A (neutral), and M (positive) comes last
-    sorted_result = 'T' * counts['T'] + 'A' * counts['A'] + 'M' * counts['M']
+    sorted_result = 'T' * count_T + 'A' * count_A + 'M' * count_M
     return sorted_result
 
 # HTML for the Overview page
@@ -134,6 +139,7 @@ program_html = """
         function sendLetters() {
             let input = document.getElementById("userInput").value.toUpperCase();
             socket.emit('sort_letters', input);
+            document.getElementById("userInput").value = ''; // Clear the input box after sending
         }
 
         // Receive sorted response from the server and update the UI

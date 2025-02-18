@@ -201,15 +201,22 @@ def overview():
 def program():
     return program_html
 
-# WebSocket event to handle sorting
 @socketio.on("sort_letters")
 def handle_sort(input_str):
     """
     Handles sorting requests from the client.
+    - Checks for invalid characters.
     - Sorts the input string in T → A → M order.
     - Stores the result in history.
     - Sends the result back to all connected clients.
     """
+    # Check for invalid characters
+    invalid_chars = [char for char in input_str if char not in "TAM"]
+    
+    if invalid_chars:
+        emit("sorted_response", {"input": input_str, "sorted_letters": "Invalid input! Use only T, A, and M."}, broadcast=True)
+        return
+
     sorted_result = sort_letters(input_str)
     history.append({"input": input_str, "sorted": sorted_result})
     emit("sorted_response", {"input": input_str, "sorted_letters": sorted_result}, broadcast=True)

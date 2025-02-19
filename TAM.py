@@ -12,29 +12,47 @@ history = []
 
 def sort_letters(input_str):
     """
-    Sorts the input string to ensure the order is always:
-    T first, followed by A, then M.
+    Sorts the input string using the Dutch National Flag Algorithm.
+    Ensures the order is always: T first, A second, M last.
 
     Args:
-        input_str (str): The input string containing any letters.
+        input_str (str): The input string containing letters.
 
     Returns:
-        str: A new string with only T, A, and M sorted in the correct order.
+        str: A new string with only T, A, and M sorted correctly.
     """
+    
+    # Convert input string to a list for easy swapping
     chars = list(input_str)
-    index_T, index_A, index_M = 0, 0, len(chars) - 1
-    
-    while index_A <= index_M:
-        if chars[index_A] == 'T':
-            chars[index_T], chars[index_A] = chars[index_A], chars[index_T]
-            index_T += 1
-            index_A += 1
-        elif chars[index_A] == 'A':
-            index_A += 1
-        else:  # chars[index_A] == 'M'
-            chars[index_A], chars[index_M] = chars[index_M], chars[index_A]
-            index_M -= 1
-    
+
+    # Initialize three pointers:
+    # low -> Boundary for 'T' region (starts at 0)
+    # mid -> Scanning pointer (starts at 0)
+    # high -> Boundary for 'M' region (starts at last index)
+    low, mid, high = 0, 0, len(chars) - 1
+
+    # Process elements until mid crosses high
+    while mid <= high:
+        if chars[mid] == 'T':  
+            # Case 1: 'T' should be at the beginning (low region)
+            # Swap 'T' at mid with the first unsorted element at low
+            chars[low], chars[mid] = chars[mid], chars[low]
+            # Move both low and mid pointers forward
+            low += 1
+            mid += 1
+        elif chars[mid] == 'A':  
+            # Case 2: 'A' is already in the correct middle position
+            # No need to swap, just move mid forward
+            mid += 1
+        else:  # chars[mid] == 'M'
+            # Case 3: 'M' should be at the end (high region)
+            # Swap 'M' at mid with the last unsorted element at high
+            chars[mid], chars[high] = chars[high], chars[mid]
+            # Move high pointer backward
+            # (DO NOT increment mid because the swapped element needs checking)
+            high -= 1  
+
+    # Convert the sorted list back to a string and return
     return ''.join(chars)
 
 

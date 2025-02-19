@@ -10,7 +10,6 @@ socketio = SocketIO(app)  # Enable WebSockets for real-time updates
 # Store the history of inputs and their sorted results
 history = []
 
-# Function to sort letters in the order: T -> A -> M
 def sort_letters(input_str):
     """
     Sorts the input string to ensure the order is always:
@@ -22,23 +21,24 @@ def sort_letters(input_str):
     Returns:
         str: A new string with only T, A, and M sorted in the correct order.
     """
-    # Initialize counts for T, A, and M
-    count_T = 0
-    count_A = 0
-    count_M = 0
+    chars = list(input_str)
+    index_T, index_A, index_M = 0, 0, len(chars) - 1
+    
+    while index_A <= index_M:
+        if chars[index_A] == 'T':
+            chars[index_T], chars[index_A] = chars[index_A], chars[index_T]
+            index_T += 1
+            index_A += 1
+        elif chars[index_A] == 'A':
+            index_A += 1
+        else:  # chars[index_A] == 'M'
+            chars[index_A], chars[index_M] = chars[index_M], chars[index_A]
+            index_M -= 1
+    
+    return ''.join(chars)
 
-    # Count occurrences of each letter in the input string
-    for char in input_str:
-        if char == 'T':
-            count_T += 1
-        elif char == 'A':
-            count_A += 1
-        elif char == 'M':
-            count_M += 1
 
-    # Construct the sorted result in the fixed order: T -> A -> M
-    sorted_result = 'T' * count_T + 'A' * count_A + 'M' * count_M
-    return sorted_result
+
 
 # HTML for the Overview page
 overview_html = """

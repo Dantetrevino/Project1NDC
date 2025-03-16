@@ -255,3 +255,7 @@ def open_browser():
 if __name__ == "__main__":
     threading.Timer(1, open_browser).start()
     socketio.run(app, debug=True)
+
+    
+#make sure to install pip install Flask flask-socketio 
+#then run it as python TAM.py

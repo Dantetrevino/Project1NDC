@@ -10,52 +10,33 @@ socketio = SocketIO(app)  # Enable WebSockets for real-time updates
 # Store the history of inputs and their sorted results
 history = []
 
-def sort_letters(input_str):
+# Function to sort letters in the order: T -> A -> M 
+def organize_letters(user_input):
     """
-    Sorts the input string using the Dutch National Flag Algorithm.
-    Ensures the order is always: T first, A second, M last.
-
-    Args:
-        input_str (str): The input string containing letters.
-
-    Returns:
-        str: A new string with only T, A, and M sorted correctly.
+    Sorts the input string to ensure the order is always:
+    T first, followed by A, then M.
     """
-    
-    # Convert input string to a list for easy swapping
-    chars = list(input_str)
+    user_input = user_input.replace("#", "")
 
-    # Initialize three pointers:
-    # low -> Boundary for 'T' region (starts at 0)
-    # mid -> Scanning pointer (starts at 0)
-    # high -> Boundary for 'M' region (starts at last index)
-    low, mid, high = 0, 0, len(chars) - 1
+    if not all(c in "TAM" for c in user_input):
+        return "Invalid input. Only T, A, and M are allowed."
 
-    # Process elements until mid crosses high
-    while mid <= high:
-        if chars[mid] == 'T':  
-            # Case 1: 'T' should be at the beginning (low region)
-            # Swap 'T' at mid with the first unsorted element at low
-            chars[low], chars[mid] = chars[mid], chars[low]
-            # Move both low and mid pointers forward
-            low += 1
-            mid += 1
-        elif chars[mid] == 'A':  
-            # Case 2: 'A' is already in the correct middle position
-            # No need to swap, just move mid forward
-            mid += 1
-        else:  # chars[mid] == 'M'
-            # Case 3: 'M' should be at the end (high region)
-            # Swap 'M' at mid with the last unsorted element at high
-            chars[mid], chars[high] = chars[high], chars[mid]
-            # Move high pointer backward
-            # (DO NOT increment mid because the swapped element needs checking)
-            high -= 1  
+    result = list(user_input)  # Convert input string to a list
+    left, right = 0, len(result) - 1  # Two pointers
 
-    # Convert the sorted list back to a string and return
-    return ''.join(chars)
+    i = 0
+    while i <= right:
+        if result[i] == 'T':
+            result.insert(left, result.pop(i))  # Move 'T' to the left
+            left += 1
+            i += 1
+        elif result[i] == 'M':
+            result.append(result.pop(i))  # Move 'M' to the right
+            right -= 1
+        else:
+            i += 1  # Skip 'A'
 
-
+    return "".join(result) 
 
 
 # HTML for the Overview page
@@ -219,25 +200,19 @@ def overview():
 def program():
     return program_html
 
+# WebSocket event to handle sorting
 @socketio.on("sort_letters")
 def handle_sort(input_str):
     """
     Handles sorting requests from the client.
-    - Checks for invalid characters.
     - Sorts the input string in T → A → M order.
     - Stores the result in history.
     - Sends the result back to all connected clients.
     """
-    # Check for invalid characters
-    invalid_chars = [char for char in input_str if char not in "TAM"]
-    
-    if invalid_chars:
-        emit("sorted_response", {"input": input_str, "sorted_letters": "Invalid input! Use only T, A, and M."}, broadcast=True)
-        return
-
-    sorted_result = sort_letters(input_str)
+    sorted_result = organize_letters(input_str)  # ✅ FIXED FUNCTION CALL
     history.append({"input": input_str, "sorted": sorted_result})
     emit("sorted_response", {"input": input_str, "sorted_letters": sorted_result}, broadcast=True)
+
 
 # WebSocket event to send history to clients
 @socketio.on("get_history")
@@ -255,7 +230,3 @@ def open_browser():
 if __name__ == "__main__":
     threading.Timer(1, open_browser).start()
     socketio.run(app, debug=True)
-
-    
-#make sure to install pip install Flask flask-socketio 
-#then run it as python TAM.py
